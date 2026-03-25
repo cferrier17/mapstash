@@ -1,10 +1,36 @@
-import type {
-  AddressSuggestion,
-  PhotonFeature,
-  PhotonFeatureCollection,
-} from '../types/geocoding'
+export type AddressSuggestion = {
+  id: string
+  label: string
+  name: string
+  position: [number, number]
+}
 
-const PHOTON_API_URL = '/api/photon'
+type PhotonFeatureCollection = {
+  features: PhotonFeature[]
+}
+
+type PhotonFeature = {
+  geometry: {
+    coordinates: [number, number]
+    type: string
+  }
+  properties: {
+    city?: string
+    country?: string
+    district?: string
+    housenumber?: string
+    locality?: string
+    name?: string
+    postcode?: string
+    state?: string
+    street?: string
+  }
+}
+
+const DEFAULT_RESULT_LIMIT = 5
+const MAX_RESULT_LIMIT = 10
+const MIN_QUERY_LENGTH = 3
+const PHOTON_API_URL = process.env.PHOTON_API_URL ?? 'https://photon.komoot.io/api'
 
 function formatAddress(properties: PhotonFeature['properties']) {
   const streetLine = [properties.street, properties.housenumber]
@@ -26,7 +52,10 @@ function formatAddress(properties: PhotonFeature['properties']) {
     .join(', ')
 }
 
-function toSuggestion(feature: PhotonFeature, index: number): AddressSuggestion | null {
+function toSuggestion(
+  feature: PhotonFeature,
+  index: number,
+): AddressSuggestion | null {
   if (feature.geometry.type !== 'Point') {
     return null
   }
@@ -50,23 +79,41 @@ function toSuggestion(feature: PhotonFeature, index: number): AddressSuggestion 
   }
 }
 
+function normalizeLimit(limit?: string) {
+  const parsedLimit = Number(limit)
+
+  if (!Number.isInteger(parsedLimit) || parsedLimit <= 0) {
+    return DEFAULT_RESULT_LIMIT
+  }
+
+  return Math.min(parsedLimit, MAX_RESULT_LIMIT)
+}
+
+export function shouldSearchAddresses(query: string) {
+  return query.trim().length >= MIN_QUERY_LENGTH
+}
+
 export async function searchAddresses(
   query: string,
-  signal?: AbortSignal,
+  limit?: string,
 ): Promise<AddressSuggestion[]> {
   const trimmedQuery = query.trim()
 
-  if (trimmedQuery.length < 3) {
+  if (!shouldSearchAddresses(trimmedQuery)) {
     return []
   }
 
   const searchParams = new URLSearchParams({
     q: trimmedQuery,
-    limit: '5',
+    limit: String(normalizeLimit(limit)),
   })
-  const requestUrl = `${PHOTON_API_URL}?${searchParams.toString()}`
 
-  const response = await fetch(requestUrl, { signal })
+  const response = await fetch(`${PHOTON_API_URL}?${searchParams.toString()}`, {
+    headers: {
+      Accept: 'application/json',
+    },
+    cache: 'no-store',
+  })
 
   if (!response.ok) {
     throw new Error(`Photon request failed with status ${response.status}`)

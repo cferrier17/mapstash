@@ -182,7 +182,7 @@ export function AddPlaceModal({
                   address.trim().length >= 3 &&
                   addressSuggestions.length === 0 ? (
                     <div className="px-3 py-2 text-sm text-gray-500">
-                      No Photon matches found.
+                      No address matches found.
                     </div>
                   ) : null}
 

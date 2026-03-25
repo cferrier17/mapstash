@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { searchAddresses } from '../services/photon'
+import { searchAddresses } from '../services/addressAutocomplete'
 import type { AddressSuggestion } from '../types/geocoding'
 
 type UseAddressAutocompleteOptions = {
@@ -64,7 +64,9 @@ export function useAddressAutocomplete({
 
         console.error(searchError)
         setSuggestions([])
-        setError('Photon is unavailable right now. Try again in a moment.')
+        setError(
+          'Address autocomplete is unavailable right now. Try again in a moment.',
+        )
       } finally {
         if (!controller.signal.aborted) {
           setIsLoading(false)
