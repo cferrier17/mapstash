@@ -22,9 +22,9 @@ export function MapView({ selectedPlace, places }: MapViewProps) {
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold">Carte</h2>
+        <h2 className="text-lg font-semibold">Map</h2>
         <p className="text-sm text-gray-500">
-          Clique sur un lieu ou ajoute-en un nouveau
+          Click a place or add a new one
         </p>
       </div>
 

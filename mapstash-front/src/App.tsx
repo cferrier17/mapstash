@@ -13,6 +13,7 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const [name, setName] = useState('')
+  const [address, setAddress] = useState('')
   const [tags, setTags] = useState('')
   const [lat, setLat] = useState('')
   const [lng, setLng] = useState('')
@@ -33,6 +34,7 @@ function App() {
       const matchesSearch =
         normalizedSearch === '' ||
         place.name.toLowerCase().includes(normalizedSearch) ||
+        place.address.toLowerCase().includes(normalizedSearch) ||
         place.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch))
 
       const matchesTags =
@@ -58,6 +60,7 @@ function App() {
 
   const resetForm = () => {
     setName('')
+    setAddress('')
     setTags('')
     setLat('')
     setLng('')
@@ -75,7 +78,7 @@ function App() {
           <div>
             <h1 className="text-xl font-bold">Mapstr Killer</h1>
             <p className="text-sm text-gray-500">
-              Sauvegarde et explore tes lieux favoris
+              Save and explore your favorite places
             </p>
           </div>
 
@@ -84,7 +87,7 @@ function App() {
             onClick={() => setIsModalOpen(true)}
             className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
           >
-            Ajouter un lieu
+            Add a place
           </button>
         </div>
       </header>
@@ -115,10 +118,12 @@ function App() {
         onClose={() => setIsModalOpen(false)}
         onAddPlace={handleAddPlace}
         name={name}
+        address={address}
         tags={tags}
         lat={lat}
         lng={lng}
         setName={setName}
+        setAddress={setAddress}
         setTags={setTags}
         setLat={setLat}
         setLng={setLng}

@@ -14,14 +14,14 @@ export function PlacesList({
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Mes lieux</h2>
+        <h2 className="text-lg font-semibold">My places</h2>
         <span className="text-sm text-gray-500">{places.length}</span>
       </div>
 
       <div className="space-y-3">
         {places.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
-            Aucun lieu ne correspond aux filtres.
+            No places match the current filters.
           </div>
         ) : (
           places.map((place) => {
@@ -39,6 +39,7 @@ export function PlacesList({
                 }`}
               >
                 <h3 className="font-medium">{place.name}</h3>
+                <p className="mt-1 text-sm text-gray-500">{place.address}</p>
 
                 <div className="mt-2 flex flex-wrap gap-2">
                   {place.tags.map((tag) => (

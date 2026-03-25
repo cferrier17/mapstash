@@ -6,10 +6,12 @@ type AddPlaceModalProps = {
   onClose: () => void
   onAddPlace: (place: Place) => void
   name: string
+  address: string
   tags: string
   lat: string
   lng: string
   setName: (value: string) => void
+  setAddress: (value: string) => void
   setTags: (value: string) => void
   setLat: (value: string) => void
   setLng: (value: string) => void
@@ -21,10 +23,12 @@ export function AddPlaceModal({
   onClose,
   onAddPlace,
   name,
+  address,
   tags,
   lat,
   lng,
   setName,
+  setAddress,
   setTags,
   setLat,
   setLng,
@@ -55,14 +59,20 @@ export function AddPlaceModal({
     const parsedLat = Number(lat)
     const parsedLng = Number(lng)
 
-    if (!name.trim() || Number.isNaN(parsedLat) || Number.isNaN(parsedLng)) {
-      alert('Remplis correctement le nom, la latitude et la longitude.')
+    if (
+      !name.trim() ||
+      !address.trim() ||
+      Number.isNaN(parsedLat) ||
+      Number.isNaN(parsedLng)
+    ) {
+      alert('Please enter a valid name, address, latitude, and longitude.')
       return
     }
 
     const newPlace: Place = {
       id: Date.now(),
       name: name.trim(),
+      address: address.trim(),
       tags: tags
         .split(',')
         .map((tag) => tag.trim())
@@ -89,9 +99,9 @@ export function AddPlaceModal({
       >
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Ajouter un lieu</h2>
+            <h2 className="text-lg font-semibold">Add a place</h2>
             <p className="text-sm text-gray-500">
-              Remplis les infos de ton nouveau spot
+              Fill in the details for your new spot
             </p>
           </div>
 
@@ -103,13 +113,13 @@ export function AddPlaceModal({
             }}
             className="rounded-lg px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-black"
           >
-            Fermer
+            Close
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="mb-1 block text-sm font-medium">Nom</label>
+            <label className="mb-1 block text-sm font-medium">Name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -120,12 +130,23 @@ export function AddPlaceModal({
           </div>
 
           <div>
+            <label className="mb-1 block text-sm font-medium">Address</label>
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              type="text"
+              placeholder="Ex: 5 Rue Lucien Sampaix, Paris"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-black"
+            />
+          </div>
+
+          <div>
             <label className="mb-1 block text-sm font-medium">Tags</label>
             <input
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               type="text"
-              placeholder="Ex: brunch, coffee, à tester"
+              placeholder="E.g. brunch, coffee, to try"
               className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-black"
             />
           </div>
@@ -165,14 +186,14 @@ export function AddPlaceModal({
               }}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-black hover:text-black"
             >
-              Annuler
+              Cancel
             </button>
 
             <button
               type="submit"
               className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
             >
-              Ajouter
+              Add
             </button>
           </div>
         </form>

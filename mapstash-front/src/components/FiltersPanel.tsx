@@ -17,16 +17,16 @@ export function FiltersPanel({
 }: FiltersPanelProps) {
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold">Recherche et filtres</h2>
+      <h2 className="mb-4 text-lg font-semibold">Search and filters</h2>
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium">Recherche</label>
+          <label className="mb-1 block text-sm font-medium">Search</label>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             type="text"
-            placeholder="Nom ou tag"
+            placeholder="Name or tag"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-black"
           />
         </div>
@@ -60,7 +60,7 @@ export function FiltersPanel({
           onClick={resetFilters}
           className="text-sm text-gray-500 underline hover:text-black"
         >
-          Réinitialiser les filtres
+          Reset filters
         </button>
       </div>
     </section>
