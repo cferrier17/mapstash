@@ -1,0 +1,21 @@
+# See https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+.next/
+out/
+
+# Production
+build/
+
+# Dependencies
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local env files
+.env*.local
+
+# macOS
+.DS_Store
