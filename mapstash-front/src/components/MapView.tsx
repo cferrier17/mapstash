@@ -1,3 +1,4 @@
+import type { ComponentType, ReactNode } from 'react'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import type { Place } from '../types/place'
 
@@ -18,6 +19,23 @@ type MapViewProps = {
   places: Place[]
 }
 
+type CompatibleMapContainerProps = {
+  center: [number, number]
+  zoom: number
+  scrollWheelZoom: boolean
+  className?: string
+  children?: ReactNode
+}
+
+type CompatibleTileLayerProps = {
+  attribution: string
+  url: string
+}
+
+const CompatibleMapContainer =
+  MapContainer as ComponentType<CompatibleMapContainerProps>
+const CompatibleTileLayer = TileLayer as ComponentType<CompatibleTileLayerProps>
+
 export function MapView({ selectedPlace, places }: MapViewProps) {
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -29,13 +47,13 @@ export function MapView({ selectedPlace, places }: MapViewProps) {
       </div>
 
       <div className="h-[700px] overflow-hidden rounded-2xl">
-        <MapContainer
+        <CompatibleMapContainer
           center={selectedPlace.position}
           zoom={15}
           scrollWheelZoom={true}
           className="h-full w-full"
         >
-          <TileLayer
+          <CompatibleTileLayer
             attribution="&copy; OpenStreetMap contributors"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
@@ -52,7 +70,7 @@ export function MapView({ selectedPlace, places }: MapViewProps) {
               </Popup>
             </Marker>
           ))}
-        </MapContainer>
+        </CompatibleMapContainer>
       </div>
     </section>
   )

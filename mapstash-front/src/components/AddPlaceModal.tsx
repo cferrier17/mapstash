@@ -1,46 +1,55 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useAddressAutocomplete } from '../hooks/useAddressAutocomplete'
+import type { AddressSuggestion } from '../types/geocoding'
 import type { Place } from '../types/place'
 
 type AddPlaceModalProps = {
   isOpen: boolean
   onClose: () => void
   onAddPlace: (place: Place) => void
-  name: string
-  address: string
-  tags: string
-  lat: string
-  lng: string
-  setName: (value: string) => void
-  setAddress: (value: string) => void
-  setTags: (value: string) => void
-  setLat: (value: string) => void
-  setLng: (value: string) => void
-  resetForm: () => void
 }
 
 export function AddPlaceModal({
   isOpen,
   onClose,
   onAddPlace,
-  name,
-  address,
-  tags,
-  lat,
-  lng,
-  setName,
-  setAddress,
-  setTags,
-  setLat,
-  setLng,
-  resetForm,
 }: AddPlaceModalProps) {
+  const [name, setName] = useState('')
+  const [address, setAddress] = useState('')
+  const [isAddressSuggestionsOpen, setIsAddressSuggestionsOpen] = useState(false)
+  const [tags, setTags] = useState('')
+  const [lat, setLat] = useState('')
+  const [lng, setLng] = useState('')
+  const {
+    suggestions: addressSuggestions,
+    isLoading: isSearchingAddresses,
+    error: addressSearchError,
+    suppressNextSearch,
+  } = useAddressAutocomplete({
+    enabled: isOpen,
+    query: address,
+  })
+
+  const resetForm = useCallback(() => {
+    setName('')
+    setAddress('')
+    setIsAddressSuggestionsOpen(false)
+    setTags('')
+    setLat('')
+    setLng('')
+  }, [])
+
+  const handleDismiss = useCallback(() => {
+    onClose()
+    resetForm()
+  }, [onClose, resetForm])
+
   useEffect(() => {
     if (!isOpen) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose()
-        resetForm()
+        handleDismiss()
       }
     }
 
@@ -49,9 +58,21 @@ export function AddPlaceModal({
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isOpen, onClose, resetForm])
+  }, [handleDismiss, isOpen])
 
   if (!isOpen) return null
+
+  const handleSelectAddressSuggestion = (suggestion: AddressSuggestion) => {
+    suppressNextSearch()
+    setAddress(suggestion.label)
+    setIsAddressSuggestionsOpen(false)
+    setLat(String(suggestion.position[0]))
+    setLng(String(suggestion.position[1]))
+
+    if (!name.trim()) {
+      setName(suggestion.name)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -81,17 +102,13 @@ export function AddPlaceModal({
     }
 
     onAddPlace(newPlace)
-    resetForm()
-    onClose()
+    handleDismiss()
   }
 
   return (
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4"
-      onClick={() => {
-        onClose()
-        resetForm()
-      }}
+      onClick={handleDismiss}
     >
       <div
         className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
@@ -107,10 +124,7 @@ export function AddPlaceModal({
 
           <button
             type="button"
-            onClick={() => {
-              onClose()
-              resetForm()
-            }}
+            onClick={handleDismiss}
             className="rounded-lg px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-black"
           >
             Close
@@ -131,13 +145,67 @@ export function AddPlaceModal({
 
           <div>
             <label className="mb-1 block text-sm font-medium">Address</label>
-            <input
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              type="text"
-              placeholder="Ex: 5 Rue Lucien Sampaix, Paris"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-black"
-            />
+            <div className="relative">
+              <input
+                value={address}
+                onChange={(e) => {
+                  const nextAddress = e.target.value
+                  setAddress(nextAddress)
+                  setIsAddressSuggestionsOpen(nextAddress.trim().length >= 3)
+                }}
+                onFocus={() => {
+                  setIsAddressSuggestionsOpen(address.trim().length >= 3)
+                }}
+                type="text"
+                placeholder="Ex: 5 Rue Lucien Sampaix, Paris"
+                autoComplete="off"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-black"
+              />
+
+              {isAddressSuggestionsOpen &&
+                (address.trim().length >= 3 || addressSearchError) && (
+                <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-10 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                  {isSearchingAddresses ? (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      Looking up addresses...
+                    </div>
+                  ) : null}
+
+                  {!isSearchingAddresses && addressSearchError ? (
+                    <div className="px-3 py-2 text-sm text-red-600">
+                      {addressSearchError}
+                    </div>
+                  ) : null}
+
+                  {!isSearchingAddresses &&
+                  !addressSearchError &&
+                  address.trim().length >= 3 &&
+                  addressSuggestions.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      No Photon matches found.
+                    </div>
+                  ) : null}
+
+                  {!isSearchingAddresses &&
+                    !addressSearchError &&
+                    addressSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion.id}
+                        type="button"
+                        onClick={() => handleSelectAddressSuggestion(suggestion)}
+                        className="block w-full border-t border-gray-100 px-3 py-2 text-left transition first:border-t-0 hover:bg-gray-50"
+                      >
+                        <span className="block text-sm font-medium text-gray-900">
+                          {suggestion.name}
+                        </span>
+                        <span className="mt-1 block text-xs text-gray-500">
+                          {suggestion.label}
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
@@ -180,10 +248,7 @@ export function AddPlaceModal({
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={() => {
-                onClose()
-                resetForm()
-              }}
+              onClick={handleDismiss}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-black hover:text-black"
             >
               Cancel

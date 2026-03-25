@@ -12,12 +12,6 @@ function App() {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const [name, setName] = useState('')
-  const [address, setAddress] = useState('')
-  const [tags, setTags] = useState('')
-  const [lat, setLat] = useState('')
-  const [lng, setLng] = useState('')
-
   const [search, setSearch] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
 
@@ -56,14 +50,6 @@ function App() {
   const resetFilters = () => {
     setSearch('')
     setSelectedTags([])
-  }
-
-  const resetForm = () => {
-    setName('')
-    setAddress('')
-    setTags('')
-    setLat('')
-    setLng('')
   }
 
   const handleAddPlace = (newPlace: Place) => {
@@ -117,17 +103,6 @@ function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAddPlace={handleAddPlace}
-        name={name}
-        address={address}
-        tags={tags}
-        lat={lat}
-        lng={lng}
-        setName={setName}
-        setAddress={setAddress}
-        setTags={setTags}
-        setLat={setLat}
-        setLng={setLng}
-        resetForm={resetForm}
       />
     </div>
   )
