@@ -18,6 +18,7 @@ function ChangeMapView({ center, zoom }: ChangeMapViewProps) {
 }
 
 type MapViewProps = {
+  isLoading?: boolean
   selectedPlace: Place | null
   places: Place[]
 }
@@ -39,7 +40,7 @@ const CompatibleMapContainer =
   MapContainer as ComponentType<CompatibleMapContainerProps>
 const CompatibleTileLayer = TileLayer as ComponentType<CompatibleTileLayerProps>
 
-export function MapView({ selectedPlace, places }: MapViewProps) {
+export function MapView({ isLoading = false, selectedPlace, places }: MapViewProps) {
   if (!selectedPlace) {
     return (
       <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -51,7 +52,9 @@ export function MapView({ selectedPlace, places }: MapViewProps) {
         </div>
 
         <div className="flex h-[700px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 text-center text-sm text-gray-500">
-          No saved place is selected right now.
+          {isLoading
+            ? 'Loading your saved places...'
+            : 'No saved place is selected right now.'}
         </div>
       </section>
     )

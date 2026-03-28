@@ -4,15 +4,16 @@ import {
   MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH,
   type AddressSuggestion,
 } from '../types/geocoding'
-import type { Place } from '../types/place'
+import type { Place, PlaceDraft } from '../types/place'
 
 type AddPlaceModalProps = {
   isOpen: boolean
+  isPending?: boolean
   mode: 'add' | 'edit'
   place?: Place | null
   onClose: () => void
-  onSavePlace: (place: Place) => void
-  onDeletePlace?: (placeId: number) => void
+  onSavePlace: (place: PlaceDraft) => Promise<void>
+  onDeletePlace?: (placeId: number) => Promise<void>
 }
 
 type PlaceFormState = {
@@ -35,6 +36,7 @@ function getInitialFormState(place?: Place | null): PlaceFormState {
 
 export function AddPlaceModal({
   isOpen,
+  isPending = false,
   mode,
   place,
   onClose,
@@ -59,7 +61,7 @@ export function AddPlaceModal({
     if (!isOpen) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !isPending) {
         onClose()
       }
     }
@@ -69,7 +71,7 @@ export function AddPlaceModal({
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isOpen, onClose])
+  }, [isOpen, isPending, onClose])
 
   if (!isOpen) return null
 
@@ -78,7 +80,13 @@ export function AddPlaceModal({
   const description = isEditing
     ? 'Update the details for this saved spot'
     : 'Fill in the details for your new spot'
-  const submitLabel = isEditing ? 'Save changes' : 'Add'
+  const submitLabel = isPending
+    ? isEditing
+      ? 'Saving...'
+      : 'Adding...'
+    : isEditing
+      ? 'Save changes'
+      : 'Add'
 
   const handleSelectAddressSuggestion = (suggestion: AddressSuggestion) => {
     suppressNextSearch()
@@ -92,8 +100,12 @@ export function AddPlaceModal({
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
+    if (isPending) {
+      return
+    }
 
     const parsedLat = Number(formState.lat)
     const parsedLng = Number(formState.lng)
@@ -108,8 +120,7 @@ export function AddPlaceModal({
       return
     }
 
-    const nextPlace: Place = {
-      id: isEditing ? place!.id : Date.now(),
+    const nextPlace: PlaceDraft = {
       name: formState.name.trim(),
       address: formState.address.trim(),
       tags: formState.tags
@@ -119,24 +130,29 @@ export function AddPlaceModal({
       position: [parsedLat, parsedLng],
     }
 
-    onSavePlace(nextPlace)
+    await onSavePlace(nextPlace)
     onClose()
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!isEditing || !place || !onDeletePlace) return
+    if (isPending) return
 
     const shouldDelete = window.confirm(`Delete "${place.name}"?`)
     if (!shouldDelete) return
 
-    onDeletePlace(place.id)
+    await onDeletePlace(place.id)
     onClose()
   }
 
   return (
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
+      onClick={() => {
+        if (!isPending) {
+          onClose()
+        }
+      }}
     >
       <div
         className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
@@ -151,6 +167,7 @@ export function AddPlaceModal({
           <button
             type="button"
             onClick={onClose}
+            disabled={isPending}
             className="rounded-lg px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-black"
           >
             Close
@@ -296,6 +313,7 @@ export function AddPlaceModal({
               <button
                 type="button"
                 onClick={handleDelete}
+                disabled={isPending}
                 className="mr-auto rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:border-red-400 hover:bg-red-50"
               >
                 Delete place
@@ -305,6 +323,7 @@ export function AddPlaceModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={isPending}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-black hover:text-black"
             >
               Cancel
@@ -312,6 +331,7 @@ export function AddPlaceModal({
 
             <button
               type="submit"
+              disabled={isPending}
               className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
             >
               {submitLabel}

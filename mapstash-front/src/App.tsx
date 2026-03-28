@@ -1,10 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AddPlaceModal } from './components/AddPlaceModal'
 import { FiltersPanel } from './components/FiltersPanel'
 import { MapView } from './components/MapView'
 import { PlacesList } from './components/PlacesList'
-import { initialPlaces } from './data/places'
-import type { Place } from './types/place'
+import {
+  createPlace as createPlaceRequest,
+  deletePlace as deletePlaceRequest,
+  fetchPlaces,
+  PlacesApiError,
+  updatePlace as updatePlaceRequest,
+} from './services/places'
+import type { Place, PlaceDraft } from './types/place'
 
 type EditorState =
   | {
@@ -16,14 +22,78 @@ type EditorState =
     }
 
 function App() {
-  const [places, setPlaces] = useState<Place[]>(initialPlaces)
-  const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(
-    initialPlaces[0]?.id ?? null,
-  )
+  const [places, setPlaces] = useState<Place[]>([])
+  const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null)
   const [editorState, setEditorState] = useState<EditorState | null>(null)
+  const [isLoadingPlaces, setIsLoadingPlaces] = useState(true)
+  const [placesError, setPlacesError] = useState('')
+  const [isSubmittingPlace, setIsSubmittingPlace] = useState(false)
+  const [placesReloadToken, setPlacesReloadToken] = useState(0)
 
   const [search, setSearch] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+
+  const getPlacesErrorMessage = (error: unknown) => {
+    if (error instanceof PlacesApiError) {
+      return error.message
+    }
+
+    return 'Unable to load saved places from the server.'
+  }
+
+  const getPlaceActionErrorMessage = (
+    error: unknown,
+    fallbackMessage: string,
+  ) => {
+    if (error instanceof PlacesApiError) {
+      return error.message
+    }
+
+    return fallbackMessage
+  }
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const loadPlaces = async () => {
+      setIsLoadingPlaces(true)
+      setPlacesError('')
+
+      try {
+        const nextPlaces = await fetchPlaces(controller.signal)
+
+        if (controller.signal.aborted) {
+          return
+        }
+
+        setPlaces(nextPlaces)
+        setSelectedPlaceId((currentSelectedPlaceId) =>
+          currentSelectedPlaceId !== null &&
+          nextPlaces.some((place) => place.id === currentSelectedPlaceId)
+            ? currentSelectedPlaceId
+            : nextPlaces[0]?.id ?? null,
+        )
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return
+        }
+
+        console.error(error)
+        setPlaces([])
+        setPlacesError(getPlacesErrorMessage(error))
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingPlaces(false)
+        }
+      }
+    }
+
+    void loadPlaces()
+
+    return () => {
+      controller.abort()
+    }
+  }, [placesReloadToken])
 
   const allTags = useMemo(() => {
     return Array.from(new Set(places.flatMap((place) => place.tags))).sort((a, b) =>
@@ -78,30 +148,73 @@ function App() {
     setSelectedTags([])
   }
 
-  const handleAddPlace = (newPlace: Place) => {
-    setPlaces((prev) => [newPlace, ...prev])
-    setSelectedPlaceId(newPlace.id)
+  const handleAddPlace = async (newPlace: PlaceDraft) => {
+    setIsSubmittingPlace(true)
+
+    try {
+      const createdPlace = await createPlaceRequest(newPlace)
+      setPlaces((prev) => [createdPlace, ...prev])
+      setSelectedPlaceId(createdPlace.id)
+    } catch (error) {
+      console.error(error)
+      alert(
+        getPlaceActionErrorMessage(error, 'Unable to save this place right now.'),
+      )
+      throw error
+    } finally {
+      setIsSubmittingPlace(false)
+    }
   }
 
-  const handleUpdatePlace = (updatedPlace: Place) => {
-    setPlaces((prev) =>
-      prev.map((place) => (place.id === updatedPlace.id ? updatedPlace : place)),
-    )
-    setSelectedPlaceId((currentId) =>
-      currentId === updatedPlace.id ? updatedPlace.id : currentId,
-    )
+  const handleUpdatePlace = async (placeId: number, updatedPlace: PlaceDraft) => {
+    setIsSubmittingPlace(true)
+
+    try {
+      const savedPlace = await updatePlaceRequest(placeId, updatedPlace)
+      setPlaces((prev) =>
+        prev.map((place) => (place.id === savedPlace.id ? savedPlace : place)),
+      )
+      setSelectedPlaceId((currentId) =>
+        currentId === savedPlace.id ? savedPlace.id : currentId,
+      )
+    } catch (error) {
+      console.error(error)
+      alert(
+        getPlaceActionErrorMessage(error, 'Unable to update this place right now.'),
+      )
+      throw error
+    } finally {
+      setIsSubmittingPlace(false)
+    }
   }
 
-  const handleDeletePlace = (placeId: number) => {
-    setPlaces((prev) => prev.filter((place) => place.id !== placeId))
-    setSelectedPlaceId((currentId) => (currentId === placeId ? null : currentId))
-    setEditorState((currentState) => {
-      if (currentState?.mode === 'edit' && currentState.placeId === placeId) {
-        return null
-      }
+  const handleDeletePlace = async (placeId: number) => {
+    setIsSubmittingPlace(true)
 
-      return currentState
-    })
+    try {
+      await deletePlaceRequest(placeId)
+
+      const nextPlaces = places.filter((place) => place.id !== placeId)
+      setPlaces(nextPlaces)
+      setSelectedPlaceId((currentId) =>
+        currentId === placeId ? nextPlaces[0]?.id ?? null : currentId,
+      )
+      setEditorState((currentState) => {
+        if (currentState?.mode === 'edit' && currentState.placeId === placeId) {
+          return null
+        }
+
+        return currentState
+      })
+    } catch (error) {
+      console.error(error)
+      alert(
+        getPlaceActionErrorMessage(error, 'Unable to delete this place right now.'),
+      )
+      throw error
+    } finally {
+      setIsSubmittingPlace(false)
+    }
   }
 
   return (
@@ -127,6 +240,19 @@ function App() {
 
       <main className="mx-auto grid max-w-7xl grid-cols-1 gap-6 p-6 lg:grid-cols-[360px_1fr]">
         <aside className="space-y-6">
+          {placesError ? (
+            <section className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
+              <p>{placesError}</p>
+              <button
+                type="button"
+                onClick={() => setPlacesReloadToken((current) => current + 1)}
+                className="mt-3 underline"
+              >
+                Try again
+              </button>
+            </section>
+          ) : null}
+
           <FiltersPanel
             search={search}
             selectedTags={selectedTags}
@@ -137,6 +263,7 @@ function App() {
           />
 
           <PlacesList
+            isLoading={isLoadingPlaces}
             places={filteredPlaces}
             selectedPlace={selectedPlace}
             onSelectPlace={setSelectedPlaceId}
@@ -144,7 +271,11 @@ function App() {
           />
         </aside>
 
-        <MapView selectedPlace={selectedPlace} places={filteredPlaces} />
+        <MapView
+          isLoading={isLoadingPlaces}
+          selectedPlace={selectedPlace}
+          places={filteredPlaces}
+        />
       </main>
 
       <AddPlaceModal
@@ -156,10 +287,15 @@ function App() {
               : 'closed'
         }
         isOpen={editorState !== null}
+        isPending={isSubmittingPlace}
         mode={editorState?.mode ?? 'add'}
         place={editingPlace}
         onClose={() => setEditorState(null)}
-        onSavePlace={editorState?.mode === 'edit' ? handleUpdatePlace : handleAddPlace}
+        onSavePlace={(place) =>
+          editorState?.mode === 'edit' && editingPlace
+            ? handleUpdatePlace(editingPlace.id, place)
+            : handleAddPlace(place)
+        }
         onDeletePlace={editorState?.mode === 'edit' ? handleDeletePlace : undefined}
       />
     </div>

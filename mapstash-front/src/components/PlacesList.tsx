@@ -1,6 +1,7 @@
 import type { Place } from '../types/place'
 
 type PlacesListProps = {
+  isLoading?: boolean
   places: Place[]
   selectedPlace: Place | null
   onSelectPlace: (placeId: number) => void
@@ -8,6 +9,7 @@ type PlacesListProps = {
 }
 
 export function PlacesList({
+  isLoading = false,
   places,
   selectedPlace,
   onSelectPlace,
@@ -23,7 +25,7 @@ export function PlacesList({
       <div className="space-y-3">
         {places.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
-            No places match the current filters.
+            {isLoading ? 'Loading saved places...' : 'No places match the current filters.'}
           </div>
         ) : (
           places.map((place) => {

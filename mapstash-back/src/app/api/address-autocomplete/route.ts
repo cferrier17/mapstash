@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: 'Address autocomplete is unavailable right now.',
+        error:
+          'Address autocomplete is unavailable right now. Check the backend logs for the provider error.',
       },
       { status: 502 },
     )

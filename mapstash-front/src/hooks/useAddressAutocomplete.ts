@@ -68,7 +68,9 @@ export function useAddressAutocomplete({
         console.error(searchError)
         setSuggestions([])
         setError(
-          'Address autocomplete is unavailable right now. Try again in a moment.',
+          searchError instanceof Error
+            ? searchError.message
+            : 'Address autocomplete is unavailable right now. Try again in a moment.',
         )
       } finally {
         if (!controller.signal.aborted) {
