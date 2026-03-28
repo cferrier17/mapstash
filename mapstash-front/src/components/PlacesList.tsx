@@ -3,8 +3,8 @@ import type { Place } from '../types/place'
 type PlacesListProps = {
   places: Place[]
   selectedPlace: Place | null
-  onSelectPlace: (place: Place) => void
-  onEditPlace: (place: Place) => void
+  onSelectPlace: (placeId: number) => void
+  onEditPlace: (placeId: number) => void
 }
 
 export function PlacesList({
@@ -41,7 +41,7 @@ export function PlacesList({
                 <div className="flex items-start gap-3">
                   <button
                     type="button"
-                    onClick={() => onSelectPlace(place)}
+                    onClick={() => onSelectPlace(place.id)}
                     className="min-w-0 flex-1 text-left"
                   >
                     <h3 className="font-medium">{place.name}</h3>
@@ -61,7 +61,7 @@ export function PlacesList({
 
                   <button
                     type="button"
-                    onClick={() => onEditPlace(place)}
+                    onClick={() => onEditPlace(place.id)}
                     aria-label={`Edit ${place.name}`}
                     className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:border-gray-300 hover:bg-white hover:text-black"
                   >

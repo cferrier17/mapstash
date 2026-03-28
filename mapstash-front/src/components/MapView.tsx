@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode } from 'react'
+import { useEffect, type ComponentType, type ReactNode } from 'react'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import type { Place } from '../types/place'
 
@@ -9,7 +9,10 @@ type ChangeMapViewProps = {
 
 function ChangeMapView({ center, zoom }: ChangeMapViewProps) {
   const map = useMap()
-  map.flyTo(center, zoom, { duration: 1.2 })
+
+  useEffect(() => {
+    map.flyTo(center, zoom, { duration: 1.2 })
+  }, [center, map, zoom])
 
   return null
 }

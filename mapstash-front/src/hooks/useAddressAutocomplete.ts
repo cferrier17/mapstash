@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchAddresses } from '../services/addressAutocomplete'
-import type { AddressSuggestion } from '../types/geocoding'
+import {
+  MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH,
+  type AddressSuggestion,
+} from '../types/geocoding'
 
 type UseAddressAutocompleteOptions = {
   enabled: boolean
@@ -39,7 +42,7 @@ export function useAddressAutocomplete({
       return
     }
 
-    if (trimmedQuery.length < 3) {
+    if (trimmedQuery.length < MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH) {
       setSuggestions([])
       setError('')
       setIsLoading(false)

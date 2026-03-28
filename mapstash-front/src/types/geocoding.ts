@@ -1,6 +1,4 @@
-export type AddressSuggestion = {
-  id: string
-  label: string
-  name: string
-  position: [number, number]
-}
+export {
+  MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH,
+  type AddressSuggestion,
+} from '../../../shared/geocoding'

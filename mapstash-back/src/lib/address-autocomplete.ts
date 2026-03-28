@@ -1,9 +1,7 @@
-export type AddressSuggestion = {
-  id: string
-  label: string
-  name: string
-  position: [number, number]
-}
+import {
+  MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH,
+  type AddressSuggestion,
+} from '../../../shared/geocoding'
 
 type PhotonFeatureCollection = {
   features: PhotonFeature[]
@@ -29,7 +27,6 @@ type PhotonFeature = {
 
 const DEFAULT_RESULT_LIMIT = 5
 const MAX_RESULT_LIMIT = 10
-const MIN_QUERY_LENGTH = 3
 const PHOTON_API_URL = process.env.PHOTON_API_URL ?? 'https://photon.komoot.io/api'
 
 function formatAddress(properties: PhotonFeature['properties']) {
@@ -90,7 +87,7 @@ function normalizeLimit(limit?: string) {
 }
 
 export function shouldSearchAddresses(query: string) {
-  return query.trim().length >= MIN_QUERY_LENGTH
+  return query.trim().length >= MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH
 }
 
 export async function searchAddresses(

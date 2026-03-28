@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAddressAutocomplete } from '../hooks/useAddressAutocomplete'
-import type { AddressSuggestion } from '../types/geocoding'
+import {
+  MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH,
+  type AddressSuggestion,
+} from '../types/geocoding'
 import type { Place } from '../types/place'
 
 type AddPlaceModalProps = {
@@ -12,6 +15,24 @@ type AddPlaceModalProps = {
   onDeletePlace?: (placeId: number) => void
 }
 
+type PlaceFormState = {
+  name: string
+  address: string
+  tags: string
+  lat: string
+  lng: string
+}
+
+function getInitialFormState(place?: Place | null): PlaceFormState {
+  return {
+    name: place?.name ?? '',
+    address: place?.address ?? '',
+    tags: place?.tags.join(', ') ?? '',
+    lat: String(place?.position[0] ?? ''),
+    lng: String(place?.position[1] ?? ''),
+  }
+}
+
 export function AddPlaceModal({
   isOpen,
   mode,
@@ -20,12 +41,10 @@ export function AddPlaceModal({
   onSavePlace,
   onDeletePlace,
 }: AddPlaceModalProps) {
-  const [name, setName] = useState(() => place?.name ?? '')
-  const [address, setAddress] = useState(() => place?.address ?? '')
+  const [formState, setFormState] = useState<PlaceFormState>(() =>
+    getInitialFormState(place),
+  )
   const [isAddressSuggestionsOpen, setIsAddressSuggestionsOpen] = useState(false)
-  const [tags, setTags] = useState(() => place?.tags.join(', ') ?? '')
-  const [lat, setLat] = useState(() => String(place?.position[0] ?? ''))
-  const [lng, setLng] = useState(() => String(place?.position[1] ?? ''))
   const {
     suggestions: addressSuggestions,
     isLoading: isSearchingAddresses,
@@ -33,19 +52,15 @@ export function AddPlaceModal({
     suppressNextSearch,
   } = useAddressAutocomplete({
     enabled: isOpen && isAddressSuggestionsOpen,
-    query: address,
+    query: formState.address,
   })
-
-  const handleDismiss = useCallback(() => {
-    onClose()
-  }, [onClose])
 
   useEffect(() => {
     if (!isOpen) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        handleDismiss()
+        onClose()
       }
     }
 
@@ -54,7 +69,7 @@ export function AddPlaceModal({
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [handleDismiss, isOpen])
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -67,25 +82,25 @@ export function AddPlaceModal({
 
   const handleSelectAddressSuggestion = (suggestion: AddressSuggestion) => {
     suppressNextSearch()
-    setAddress(suggestion.label)
     setIsAddressSuggestionsOpen(false)
-    setLat(String(suggestion.position[0]))
-    setLng(String(suggestion.position[1]))
-
-    if (!name.trim()) {
-      setName(suggestion.name)
-    }
+    setFormState((current) => ({
+      ...current,
+      address: suggestion.label,
+      lat: String(suggestion.position[0]),
+      lng: String(suggestion.position[1]),
+      name: current.name.trim() ? current.name : suggestion.name,
+    }))
   }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    const parsedLat = Number(lat)
-    const parsedLng = Number(lng)
+    const parsedLat = Number(formState.lat)
+    const parsedLng = Number(formState.lng)
 
     if (
-      !name.trim() ||
-      !address.trim() ||
+      !formState.name.trim() ||
+      !formState.address.trim() ||
       Number.isNaN(parsedLat) ||
       Number.isNaN(parsedLng)
     ) {
@@ -95,9 +110,9 @@ export function AddPlaceModal({
 
     const nextPlace: Place = {
       id: isEditing ? place!.id : Date.now(),
-      name: name.trim(),
-      address: address.trim(),
-      tags: tags
+      name: formState.name.trim(),
+      address: formState.address.trim(),
+      tags: formState.tags
         .split(',')
         .map((tag) => tag.trim())
         .filter(Boolean),
@@ -105,7 +120,7 @@ export function AddPlaceModal({
     }
 
     onSavePlace(nextPlace)
-    handleDismiss()
+    onClose()
   }
 
   const handleDelete = () => {
@@ -115,13 +130,13 @@ export function AddPlaceModal({
     if (!shouldDelete) return
 
     onDeletePlace(place.id)
-    handleDismiss()
+    onClose()
   }
 
   return (
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4"
-      onClick={handleDismiss}
+      onClick={onClose}
     >
       <div
         className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
@@ -135,7 +150,7 @@ export function AddPlaceModal({
 
           <button
             type="button"
-            onClick={handleDismiss}
+            onClick={onClose}
             className="rounded-lg px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-black"
           >
             Close
@@ -146,8 +161,10 @@ export function AddPlaceModal({
           <div>
             <label className="mb-1 block text-sm font-medium">Name</label>
             <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={formState.name}
+              onChange={(e) =>
+                setFormState((current) => ({ ...current, name: e.target.value }))
+              }
               type="text"
               placeholder="Ex: Holybelly"
               className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-black"
@@ -158,14 +175,23 @@ export function AddPlaceModal({
             <label className="mb-1 block text-sm font-medium">Address</label>
             <div className="relative">
               <input
-                value={address}
+                value={formState.address}
                 onChange={(e) => {
                   const nextAddress = e.target.value
-                  setAddress(nextAddress)
-                  setIsAddressSuggestionsOpen(nextAddress.trim().length >= 3)
+                  setFormState((current) => ({
+                    ...current,
+                    address: nextAddress,
+                  }))
+                  setIsAddressSuggestionsOpen(
+                    nextAddress.trim().length >=
+                      MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH,
+                  )
                 }}
                 onFocus={() => {
-                  setIsAddressSuggestionsOpen(address.trim().length >= 3)
+                  setIsAddressSuggestionsOpen(
+                    formState.address.trim().length >=
+                      MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH,
+                  )
                 }}
                 type="text"
                 placeholder="Ex: 5 Rue Lucien Sampaix, Paris"
@@ -174,7 +200,9 @@ export function AddPlaceModal({
               />
 
               {isAddressSuggestionsOpen &&
-                (address.trim().length >= 3 || addressSearchError) && (
+                (formState.address.trim().length >=
+                  MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH ||
+                  addressSearchError) && (
                 <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-10 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
                   {isSearchingAddresses ? (
                     <div className="px-3 py-2 text-sm text-gray-500">
@@ -190,7 +218,8 @@ export function AddPlaceModal({
 
                   {!isSearchingAddresses &&
                   !addressSearchError &&
-                  address.trim().length >= 3 &&
+                  formState.address.trim().length >=
+                    MIN_ADDRESS_AUTOCOMPLETE_QUERY_LENGTH &&
                   addressSuggestions.length === 0 ? (
                     <div className="px-3 py-2 text-sm text-gray-500">
                       No address matches found.
@@ -222,8 +251,10 @@ export function AddPlaceModal({
           <div>
             <label className="mb-1 block text-sm font-medium">Tags</label>
             <input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
+              value={formState.tags}
+              onChange={(e) =>
+                setFormState((current) => ({ ...current, tags: e.target.value }))
+              }
               type="text"
               placeholder="E.g. brunch, coffee, to try"
               className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-black"
@@ -234,8 +265,10 @@ export function AddPlaceModal({
             <div>
               <label className="mb-1 block text-sm font-medium">Latitude</label>
               <input
-                value={lat}
-                onChange={(e) => setLat(e.target.value)}
+                value={formState.lat}
+                onChange={(e) =>
+                  setFormState((current) => ({ ...current, lat: e.target.value }))
+                }
                 type="number"
                 step="any"
                 placeholder="48.8566"
@@ -246,8 +279,10 @@ export function AddPlaceModal({
             <div>
               <label className="mb-1 block text-sm font-medium">Longitude</label>
               <input
-                value={lng}
-                onChange={(e) => setLng(e.target.value)}
+                value={formState.lng}
+                onChange={(e) =>
+                  setFormState((current) => ({ ...current, lng: e.target.value }))
+                }
                 type="number"
                 step="any"
                 placeholder="2.3522"
@@ -269,7 +304,7 @@ export function AddPlaceModal({
 
             <button
               type="button"
-              onClick={handleDismiss}
+              onClick={onClose}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-black hover:text-black"
             >
               Cancel
