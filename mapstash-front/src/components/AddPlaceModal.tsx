@@ -5,44 +5,40 @@ import type { Place } from '../types/place'
 
 type AddPlaceModalProps = {
   isOpen: boolean
+  mode: 'add' | 'edit'
+  place?: Place | null
   onClose: () => void
-  onAddPlace: (place: Place) => void
+  onSavePlace: (place: Place) => void
+  onDeletePlace?: (placeId: number) => void
 }
 
 export function AddPlaceModal({
   isOpen,
+  mode,
+  place,
   onClose,
-  onAddPlace,
+  onSavePlace,
+  onDeletePlace,
 }: AddPlaceModalProps) {
-  const [name, setName] = useState('')
-  const [address, setAddress] = useState('')
+  const [name, setName] = useState(() => place?.name ?? '')
+  const [address, setAddress] = useState(() => place?.address ?? '')
   const [isAddressSuggestionsOpen, setIsAddressSuggestionsOpen] = useState(false)
-  const [tags, setTags] = useState('')
-  const [lat, setLat] = useState('')
-  const [lng, setLng] = useState('')
+  const [tags, setTags] = useState(() => place?.tags.join(', ') ?? '')
+  const [lat, setLat] = useState(() => String(place?.position[0] ?? ''))
+  const [lng, setLng] = useState(() => String(place?.position[1] ?? ''))
   const {
     suggestions: addressSuggestions,
     isLoading: isSearchingAddresses,
     error: addressSearchError,
     suppressNextSearch,
   } = useAddressAutocomplete({
-    enabled: isOpen,
+    enabled: isOpen && isAddressSuggestionsOpen,
     query: address,
   })
 
-  const resetForm = useCallback(() => {
-    setName('')
-    setAddress('')
-    setIsAddressSuggestionsOpen(false)
-    setTags('')
-    setLat('')
-    setLng('')
-  }, [])
-
   const handleDismiss = useCallback(() => {
     onClose()
-    resetForm()
-  }, [onClose, resetForm])
+  }, [onClose])
 
   useEffect(() => {
     if (!isOpen) return
@@ -61,6 +57,13 @@ export function AddPlaceModal({
   }, [handleDismiss, isOpen])
 
   if (!isOpen) return null
+
+  const isEditing = mode === 'edit' && place != null
+  const title = isEditing ? 'Edit place' : 'Add a place'
+  const description = isEditing
+    ? 'Update the details for this saved spot'
+    : 'Fill in the details for your new spot'
+  const submitLabel = isEditing ? 'Save changes' : 'Add'
 
   const handleSelectAddressSuggestion = (suggestion: AddressSuggestion) => {
     suppressNextSearch()
@@ -90,8 +93,8 @@ export function AddPlaceModal({
       return
     }
 
-    const newPlace: Place = {
-      id: Date.now(),
+    const nextPlace: Place = {
+      id: isEditing ? place!.id : Date.now(),
       name: name.trim(),
       address: address.trim(),
       tags: tags
@@ -101,7 +104,17 @@ export function AddPlaceModal({
       position: [parsedLat, parsedLng],
     }
 
-    onAddPlace(newPlace)
+    onSavePlace(nextPlace)
+    handleDismiss()
+  }
+
+  const handleDelete = () => {
+    if (!isEditing || !place || !onDeletePlace) return
+
+    const shouldDelete = window.confirm(`Delete "${place.name}"?`)
+    if (!shouldDelete) return
+
+    onDeletePlace(place.id)
     handleDismiss()
   }
 
@@ -116,10 +129,8 @@ export function AddPlaceModal({
       >
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Add a place</h2>
-            <p className="text-sm text-gray-500">
-              Fill in the details for your new spot
-            </p>
+            <h2 className="text-lg font-semibold">{title}</h2>
+            <p className="text-sm text-gray-500">{description}</p>
           </div>
 
           <button
@@ -246,6 +257,16 @@ export function AddPlaceModal({
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
+            {isEditing ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="mr-auto rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:border-red-400 hover:bg-red-50"
+              >
+                Delete place
+              </button>
+            ) : null}
+
             <button
               type="button"
               onClick={handleDismiss}
@@ -258,7 +279,7 @@ export function AddPlaceModal({
               type="submit"
               className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
             >
-              Add
+              {submitLabel}
             </button>
           </div>
         </form>

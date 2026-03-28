@@ -8,9 +8,12 @@ import type { Place } from './types/place'
 
 function App() {
   const [places, setPlaces] = useState<Place[]>(initialPlaces)
-  const [selectedPlace, setSelectedPlace] = useState<Place>(initialPlaces[0])
+  const [selectedPlace, setSelectedPlace] = useState<Place | null>(
+    initialPlaces[0] ?? null,
+  )
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editingPlace, setEditingPlace] = useState<Place | null>(null)
 
   const [search, setSearch] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -57,6 +60,28 @@ function App() {
     setSelectedPlace(newPlace)
   }
 
+  const handleUpdatePlace = (updatedPlace: Place) => {
+    setPlaces((prev) =>
+      prev.map((place) => (place.id === updatedPlace.id ? updatedPlace : place)),
+    )
+    setSelectedPlace((current) =>
+      current?.id === updatedPlace.id ? updatedPlace : current,
+    )
+  }
+
+  const handleDeletePlace = (placeId: number) => {
+    const remainingPlaces = places.filter((place) => place.id !== placeId)
+
+    setPlaces(remainingPlaces)
+    setSelectedPlace((current) => {
+      if (!current) {
+        return remainingPlaces[0] ?? null
+      }
+
+      return current.id === placeId ? remainingPlaces[0] ?? null : current
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <header className="border-b border-gray-200 bg-white">
@@ -70,7 +95,7 @@ function App() {
 
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setIsAddModalOpen(true)}
             className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
           >
             Add a place
@@ -93,6 +118,7 @@ function App() {
             places={filteredPlaces}
             selectedPlace={selectedPlace}
             onSelectPlace={setSelectedPlace}
+            onEditPlace={setEditingPlace}
           />
         </aside>
 
@@ -100,9 +126,21 @@ function App() {
       </main>
 
       <AddPlaceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddPlace={handleAddPlace}
+        key={isAddModalOpen ? 'add-open' : 'add-closed'}
+        isOpen={isAddModalOpen}
+        mode="add"
+        onClose={() => setIsAddModalOpen(false)}
+        onSavePlace={handleAddPlace}
+      />
+
+      <AddPlaceModal
+        key={`edit-${editingPlace?.id ?? 'closed'}`}
+        isOpen={editingPlace !== null}
+        mode="edit"
+        place={editingPlace}
+        onClose={() => setEditingPlace(null)}
+        onSavePlace={handleUpdatePlace}
+        onDeletePlace={handleDeletePlace}
       />
     </div>
   )
