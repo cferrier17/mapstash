@@ -21,8 +21,14 @@ export function FiltersPanel({
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium">Search</label>
+          <label
+            htmlFor="filters-search"
+            className="mb-1 block text-sm font-medium"
+          >
+            Search
+          </label>
           <input
+            id="filters-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             type="text"

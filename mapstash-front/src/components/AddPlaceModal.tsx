@@ -176,8 +176,11 @@ export function AddPlaceModal({
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="mb-1 block text-sm font-medium">Name</label>
+            <label htmlFor="place-name" className="mb-1 block text-sm font-medium">
+              Name
+            </label>
             <input
+              id="place-name"
               value={formState.name}
               onChange={(e) =>
                 setFormState((current) => ({ ...current, name: e.target.value }))
@@ -189,9 +192,15 @@ export function AddPlaceModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Address</label>
+            <label
+              htmlFor="place-address"
+              className="mb-1 block text-sm font-medium"
+            >
+              Address
+            </label>
             <div className="relative">
               <input
+                id="place-address"
                 value={formState.address}
                 onChange={(e) => {
                   const nextAddress = e.target.value
@@ -266,8 +275,11 @@ export function AddPlaceModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Tags</label>
+            <label htmlFor="place-tags" className="mb-1 block text-sm font-medium">
+              Tags
+            </label>
             <input
+              id="place-tags"
               value={formState.tags}
               onChange={(e) =>
                 setFormState((current) => ({ ...current, tags: e.target.value }))
@@ -280,8 +292,14 @@ export function AddPlaceModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium">Latitude</label>
+              <label
+                htmlFor="place-latitude"
+                className="mb-1 block text-sm font-medium"
+              >
+                Latitude
+              </label>
               <input
+                id="place-latitude"
                 value={formState.lat}
                 onChange={(e) =>
                   setFormState((current) => ({ ...current, lat: e.target.value }))
@@ -294,8 +312,14 @@ export function AddPlaceModal({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium">Longitude</label>
+              <label
+                htmlFor="place-longitude"
+                className="mb-1 block text-sm font-medium"
+              >
+                Longitude
+              </label>
               <input
+                id="place-longitude"
                 value={formState.lng}
                 onChange={(e) =>
                   setFormState((current) => ({ ...current, lng: e.target.value }))

@@ -26,22 +26,20 @@ export async function searchAddresses(
   const response = await fetch(requestUrl, { signal })
 
   if (!response.ok) {
+    let apiErrorMessage: string | null = null
+
     try {
       const data = await parseJsonResponse<ApiErrorResponse>(response)
-      throw new Error(
-        data.error ??
-          `Address autocomplete request failed with status ${response.status}`,
-      )
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error
-      }
-
-      throw new Error(
-        `Address autocomplete request failed with status ${response.status}`,
-      )
+      apiErrorMessage = data.error ?? null
+    } catch {
+      apiErrorMessage = null
     }
-  }
+
+    throw new Error(
+      apiErrorMessage ??
+        `Address autocomplete request failed with status ${response.status}`,
+    )
+    }
 
   const data = await parseJsonResponse<SearchAddressesResponse>(response)
   return data.suggestions ?? []
