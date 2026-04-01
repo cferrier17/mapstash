@@ -1,6 +1,10 @@
 import type { Place, PlaceDraft } from '../types/place'
 
 const PLACES_API_URL = '/api/places'
+const DEFAULT_BACKEND_URL = 'http://localhost:3000'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? DEFAULT_BACKEND_URL
+const BACKEND_UNAVAILABLE_MESSAGE =
+  `Saved places backend is unavailable. Start mapstash-back on ${BACKEND_URL} and try again.`
 
 type ApiErrorResponse = {
   error?: string
@@ -37,6 +41,10 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 }
 
 async function parseApiError(response: Response, fallbackMessage: string) {
+  if (response.status === 502) {
+    return BACKEND_UNAVAILABLE_MESSAGE
+  }
+
   try {
     const data = await parseJsonResponse<ApiErrorResponse>(response)
     return data.error ?? fallbackMessage
@@ -52,12 +60,9 @@ async function performPlacesRequest(
   try {
     return await fetch(input, init)
   } catch {
-    throw new PlacesApiError(
-      'Saved places backend is unavailable. Start mapstash-back on http://localhost:3000 and try again.',
-      {
-        code: 'network',
-      },
-    )
+    throw new PlacesApiError(BACKEND_UNAVAILABLE_MESSAGE, {
+      code: 'network',
+    })
   }
 }
 
