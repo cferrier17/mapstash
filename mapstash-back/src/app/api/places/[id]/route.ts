@@ -3,7 +3,10 @@ import {
   deletePlace,
   updatePlace,
 } from '@/lib/place-repository'
-import type { PlaceDraft } from '../../../../../../shared/place'
+import {
+  parsePlaceDraft,
+  parsePlaceId,
+} from '@/lib/place-validation'
 
 export const runtime = 'nodejs'
 
@@ -11,55 +14,6 @@ type RouteContext = {
   params: Promise<{
     id: string
   }>
-}
-
-function parsePlaceId(idParam: string) {
-  const parsedId = Number(idParam)
-
-  if (!Number.isInteger(parsedId) || parsedId <= 0) {
-    return null
-  }
-
-  return parsedId
-}
-
-function parsePlaceDraft(value: unknown): PlaceDraft | null {
-  if (typeof value !== 'object' || value === null) {
-    return null
-  }
-
-  const candidate = value as Record<string, unknown>
-  const { name, address, tags, position } = candidate
-
-  if (typeof name !== 'string' || !name.trim()) {
-    return null
-  }
-
-  if (typeof address !== 'string' || !address.trim()) {
-    return null
-  }
-
-  if (
-    !Array.isArray(tags) ||
-    !tags.every((tag) => typeof tag === 'string' && tag.trim())
-  ) {
-    return null
-  }
-
-  if (
-    !Array.isArray(position) ||
-    position.length !== 2 ||
-    position.some((value) => typeof value !== 'number' || !Number.isFinite(value))
-  ) {
-    return null
-  }
-
-  return {
-    name: name.trim(),
-    address: address.trim(),
-    tags: tags.map((tag) => tag.trim()),
-    position: [position[0], position[1]],
-  }
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "pnpm run test:build && node --test node_modules/.tmp/test-dist/mapstash-back/tests/address-autocomplete.test.js node_modules/.tmp/test-dist/mapstash-back/tests/place-repository.test.js node_modules/.tmp/test-dist/mapstash-back/tests/place-validation.test.js",
+    "test:build": "tsc -p tsconfig.test.json"
   },
   "dependencies": {
     "next": "^15.0.0",
